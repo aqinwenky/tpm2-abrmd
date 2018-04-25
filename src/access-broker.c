@@ -37,6 +37,24 @@
 #include "tpm2-response.h"
 #include "util.h"
 
+#define TPMS_CAPABILITY_DATA_ZERO_INIT { 0, { 0, { \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } } }
+
 G_DEFINE_TYPE (AccessBroker, access_broker, G_TYPE_OBJECT);
 
 enum {
@@ -102,7 +120,7 @@ access_broker_get_property (GObject     *object,
     }
 }
 /*
- * Dispose function: relese references to gobjects. We also free the SAPI
+ * Dispose function: release references to gobjects. We also free the SAPI
  * context here as well. Typically freeing this data would be done in the
  * finalize function but it can't be used w/o the underlying TCTI.
  */
@@ -123,7 +141,10 @@ access_broker_dispose (GObject *obj)
  */
 static void
 access_broker_init (AccessBroker *broker)
-{ /* noop */ }
+{
+    UNUSED_PARAM(broker);
+    /* noop */
+}
 /**
  * GObject class initialization function. This function boils down to:
  * - Setting up the parent class.
@@ -219,6 +240,11 @@ access_broker_lock (AccessBroker *broker)
 {
     gint error;
 
+    if (broker == NULL) {
+        g_error ("AccessBroker: NULL pointer passed to access_broker_lock");
+        return;
+    }
+
     error = pthread_mutex_lock (&broker->sapi_mutex);
     if (error != 0) {
         switch (error) {
@@ -226,7 +252,7 @@ access_broker_lock (AccessBroker *broker)
             g_error ("AccessBroker: attempted to lock uninitialized mutex");
             break;
         default:
-            g_error ("AccessBroker: unkonwn error attempting to lock SAPI "
+            g_error ("AccessBroker: unknown error attempting to lock SAPI "
                      "mutex: 0x%x", error);
             break;
         }
@@ -243,6 +269,11 @@ void
 access_broker_unlock (AccessBroker *broker)
 {
     gint error;
+
+    if (broker == NULL) {
+        g_error ("AccessBroker: NULL pointer passed to access_broker_unlock");
+        return;
+    }
 
     error= pthread_mutex_unlock (&broker->sapi_mutex);
     if (error != 0) {
@@ -306,7 +337,7 @@ access_broker_get_fixed_property (AccessBroker           *broker,
                                   TPM2_PT                  property,
                                   guint32                *value)
 {
-    gint i;
+    unsigned int i;
 
     if (broker->properties_fixed.data.tpmProperties.count == 0) {
         return TSS2_RESMGR_RC_INTERNAL_ERROR;
@@ -329,6 +360,12 @@ access_broker_get_fixed_property (AccessBroker           *broker,
 TSS2_SYS_CONTEXT*
 access_broker_lock_sapi (AccessBroker *broker)
 {
+    if (broker == NULL) {
+        g_error (
+            "AccessBroker: NULL pointer passed to access_broker_lock_sapi");
+        return NULL;
+    }
+
     access_broker_lock (broker);
     g_assert_nonnull (broker->sapi_context);
     return broker->sapi_context;
@@ -418,7 +455,7 @@ access_broker_get_response (AccessBroker *broker,
 /**
  * In the most simple case the caller will want to send just a single
  * command represented by a Tpm2Command object. The response is passed
- * back as the return value. The resonse code is returend through the
+ * back as the return value. The response code is returned through the
  * 'rc' out parameter.
  * The caller MUST NOT hold the lock when calling. This function will take
  * the lock for itself.
@@ -495,7 +532,7 @@ access_broker_new (Tcti *tcti)
  * Initialize the AccessBroker. This is all about initializing internal data
  * that normally we would want to do in a constructor. But since this
  * initialization requires reaching out to the TPM and could fail we don't
- * want to do it in the constructur / _new function. So we put it here in
+ * want to do it in the constructor / _new function. So we put it here in
  * an explicit _init function that must be executed after the object has
  * been instantiated.
  */
@@ -532,7 +569,7 @@ access_broker_get_trans_object_count (AccessBroker *broker,
     TSS2_RC rc = TSS2_RC_SUCCESS;
     TSS2_SYS_CONTEXT *sapi_context;
     TPMI_YES_NO more_data;
-    TPMS_CAPABILITY_DATA capability_data = { 0, };
+    TPMS_CAPABILITY_DATA capability_data = TPMS_CAPABILITY_DATA_ZERO_INIT;
 
     g_assert_nonnull (broker);
     g_assert_nonnull (count);
@@ -667,7 +704,7 @@ access_broker_flush_all_unlocked (AccessBroker     *broker,
 {
     TSS2_RC rc = TSS2_RC_SUCCESS;
     TPMI_YES_NO more_data;
-    TPMS_CAPABILITY_DATA capability_data = { 0, };
+    TPMS_CAPABILITY_DATA capability_data = TPMS_CAPABILITY_DATA_ZERO_INIT;
     TPM2_HANDLE handle;
     size_t i;
 

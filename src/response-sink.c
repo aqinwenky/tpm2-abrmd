@@ -133,7 +133,10 @@ response_sink_dispose (GObject *obj)
 void* response_sink_thread (void *data);
 static void
 response_sink_init (ResponseSink *response)
-{ /* noop */ }
+{
+    UNUSED_PARAM(response);
+    /* noop */
+}
 static void
 response_sink_unblock (Thread *self)
 {
@@ -170,7 +173,7 @@ response_sink_class_init (ResponseSinkClass *klass)
 
     obj_properties [PROP_IN_QUEUE] =
         g_param_spec_object ("in-queue",
-                             "MessageQueeu",
+                             "MessageQueue",
                              "Input MessageQueue.",
                              G_TYPE_OBJECT,
                              G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);

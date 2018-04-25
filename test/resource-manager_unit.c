@@ -62,6 +62,8 @@ __wrap_access_broker_send_command (AccessBroker *access_broker,
                                    TSS2_RC      *rc)
 {
     Tpm2Response *response;
+    UNUSED_PARAM(access_broker);
+    UNUSED_PARAM(command);
 
     *rc      = mock_type (TSS2_RC);
     response = TPM2_RESPONSE (mock_ptr_type (GObject*));
@@ -69,7 +71,7 @@ __wrap_access_broker_send_command (AccessBroker *access_broker,
     return response;
 }
 /**
- * Mock function for testing the resoruce_manager_process_tpm2_command
+ * Mock function for testing the resource_manager_process_tpm2_command
  * function. When the AccessBroker returns a Tpm2Response object the
  * ResourceManager passes this object to whatever sink has been provided
  * to it. For the purposes of testing we don't provide a valid Sink.
@@ -87,14 +89,18 @@ void
 __wrap_sink_enqueue (Sink      *self,
                      GObject   *obj)
 {
+    UNUSED_PARAM(self);
     test_data_t *data = mock_ptr_type (test_data_t*);
     data->response = TPM2_RESPONSE (obj);
 }
 TSS2_RC
 __wrap_access_broker_context_saveflush (AccessBroker *broker,
                                         TPM2_HANDLE    handle,
-                                        TPMS_CONTEXT *contedt)
+                                        TPMS_CONTEXT *context)
 {
+    UNUSED_PARAM(broker);
+    UNUSED_PARAM(handle);
+    UNUSED_PARAM(context);
    return mock_type (TSS2_RC);
 }
 /*
@@ -110,6 +116,8 @@ __wrap_access_broker_context_load (AccessBroker *access_broker,
 {
     TSS2_RC    rc      = mock_type (TSS2_RC);
     TPM2_HANDLE phandle = mock_type (TPM2_HANDLE);
+    UNUSED_PARAM(access_broker);
+    UNUSED_PARAM(context);
 
     assert_non_null (handle);
     *handle = phandle;
@@ -246,7 +254,7 @@ resource_manager_sink_enqueue_test (void **state)
 }
 /**
  * A test: exercise the resource_manager_process_tpm2_command function.
- * This function is normally invoked by the ResoruceManager internal
+ * This function is normally invoked by the ResourceManager internal
  * thread. We invoke it directly here to control variables and timing
  * issues with the thread.
  */
@@ -390,8 +398,7 @@ resource_manager_load_contexts_test (void **state)
     g_object_unref (loaded_sessions);
 }
 int
-main (int   argc,
-      char *argv[])
+main (void)
 {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown (resource_manager_type_test,

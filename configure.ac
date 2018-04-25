@@ -106,19 +106,6 @@ AC_ARG_WITH([dbuspolicydir],
 AX_NORMALIZE_PATH([with_dbuspolicydir])
 AC_SUBST([dbuspolicydir], [$with_dbuspolicydir])
 #
-# udev
-#
-AC_ARG_WITH([udevrulesdir],
-            [AS_HELP_STRING([--with-udevrulesdir=DIR],[udev rules directory])],
-            [],
-            [with_udevrulesdir=${libdir}/udev/rules.d])
-AX_NORMALIZE_PATH([with_udevrulesdir])
-AC_SUBST([udevrulesdir], [$with_udevrulesdir])
-AC_ARG_WITH([udevrulesprefix],
-            [AS_HELP_STRING([--with-udevrulesprefix=XY],[prefix for udev rules file])],
-            [AC_SUBST([udevrulesprefix],[$with_udevrulesprefix])])
-AM_CONDITIONAL(WITH_UDEVRULESPREFIX, [test -n "$with_udevrulesprefix"])
-#
 # simulator binary
 #
 AC_MSG_CHECKING([for simulator binary: $with_simulatorbin])
@@ -143,7 +130,7 @@ AC_ARG_ENABLE([test-hwtpm],
               [enable_hwtpm=$enableval],
               [enable_hwtpm=no])
 AS_IF([test \( "x$with_simulatorbin_set" = "xyes" \) -a \( "x$enable_hwtpm" = "xyes" \) ],
-      AC_MSG_ERROR([Simulator binary and real tpm hardware cannot be both enabled.]))
+      AC_MSG_ERROR([--with-simulatorbin cannot be provided with --enable-test-hwtpm.]))
 AM_CONDITIONAL([HWTPM], [test "x$enable_hwtpm" != xno])
 
 AS_IF([test \( "x$with_simulatorbin_set" = "xno" \) -a \( "x$enable_hwtpm" = "xno" \) ],
@@ -152,6 +139,7 @@ AS_IF([test \( "x$with_simulatorbin_set" = "xno" \) -a \( "x$enable_hwtpm" = "xn
 # preprocessor / compiler / linker flags
 #   these macros are defined in m4/flags.m4
 AX_ADD_COMPILER_FLAG([-Wall])
+AX_ADD_COMPILER_FLAG([-Wextra])
 AX_ADD_COMPILER_FLAG([-Werror])
 AX_ADD_COMPILER_FLAG([-std=gnu99])
 AX_ADD_COMPILER_FLAG([-Wformat])

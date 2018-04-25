@@ -60,7 +60,7 @@ command_source_add_sink (Source      *self,
     CommandSource *src = COMMAND_SOURCE (self);
     GValue value = G_VALUE_INIT;
 
-    g_debug ("command_soruce_add_sink: CommandSource: 0x%" PRIxPTR
+    g_debug ("command_source_add_sink: CommandSource: 0x%" PRIxPTR
              " , Sink: 0x%" PRIxPTR, (uintptr_t)src, (uintptr_t)sink);
     g_value_init (&value, G_TYPE_OBJECT);
     g_value_set_object (&value, sink);
@@ -140,7 +140,7 @@ command_source_set_property (GObject       *object,
         self->connection_manager = CONNECTION_MANAGER (g_value_get_object (value));
         break;
     case PROP_SINK:
-        /* be rigid intially, add flexiblity later if we need it */
+        /* be rigid initially, add flexiblity later if we need it */
         if (self->sink != NULL) {
             g_warning ("  sink already set");
             break;
@@ -266,6 +266,7 @@ command_source_on_new_connection (ConnectionManager   *connection_manager,
     GIOStream *iostream;
     GPollableInputStream *istream;
     source_data_t *data;
+    UNUSED_PARAM(connection_manager);
 
     g_info ("%s: adding new connection: 0x%" PRIxPTR, __func__, (uintptr_t)connection);
     /*
@@ -306,6 +307,8 @@ command_source_source_cancel (gpointer key,
                               gpointer value,
                               gpointer user_data)
 {
+    UNUSED_PARAM(key);
+    UNUSED_PARAM(user_data);
     g_debug ("%s", __func__);
     source_data_t *data = (source_data_t*)value;
 
@@ -325,7 +328,7 @@ command_source_dispose (GObject *object) {
     g_clear_object (&self->sink);
     g_clear_object (&self->connection_manager);
     g_clear_object (&self->command_attrs);
-    /* cancel all outstanding G_IO_IN conndition GSources and destroy them */
+    /* cancel all outstanding G_IO_IN condition GSources and destroy them */
     if (self->istream_to_source_data_map != NULL) {
         g_hash_table_foreach (self->istream_to_source_data_map,
                               command_source_source_cancel,

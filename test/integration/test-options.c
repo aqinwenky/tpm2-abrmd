@@ -30,33 +30,37 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include <gio/gio.h>
+
+#include "util.h"
 #include "test-options.h"
 #include "tss2-tcti-tabrmd.h"
 
-TCTI_TABRMD_DBUS_TYPE
+GBusType
 bus_type_from_str (const char *bus_type_str)
 {
     if (strcmp (bus_type_str, "system") == 0) {
-        return TCTI_TABRMD_DBUS_TYPE_SYSTEM;
+        return G_BUS_TYPE_SYSTEM;
     } else if (strcmp (bus_type_str, "session") == 0) {
-        return TCTI_TABRMD_DBUS_TYPE_SESSION;
+        return G_BUS_TYPE_SESSION;
     } else {
         g_error ("Invalid bus type for %s", bus_type_str);
-        return TCTI_TABRMD_DBUS_TYPE_DEFAULT;
+        return G_BUS_TYPE_NONE;
     }
 }
 const char*
-bus_str_from_type (TCTI_TABRMD_DBUS_TYPE bus_type)
+bus_str_from_type (GBusType bus_type)
 {
     switch (bus_type) {
-    case TCTI_TABRMD_DBUS_TYPE_SESSION:
+    case G_BUS_TYPE_SESSION:
         return "session";
-    case TCTI_TABRMD_DBUS_TYPE_SYSTEM:
+    case G_BUS_TYPE_SYSTEM:
         return "system";
     default:
         return NULL;
     }
 }
+
 /*
  * return 0 if sanity test passes
  * return 1 if sanity test fails
@@ -64,6 +68,7 @@ bus_str_from_type (TCTI_TABRMD_DBUS_TYPE bus_type)
 int
 sanity_check_test_opts (test_opts_t  *opts)
 {
+    UNUSED_PARAM(opts);
     return 0;
 }
 
@@ -79,23 +84,21 @@ get_test_opts_from_env (test_opts_t          *test_opts)
     if (test_opts == NULL)
         return 1;
     env_str = getenv (ENV_TCTI);
-    if (env_str != NULL)
+    if (env_str != NULL) {
+        g_debug ("%s: %s is \"%s\"", __func__, ENV_TCTI, env_str);
         test_opts->tcti_filename = env_str;
-    env_str = getenv (ENV_TCTI_CONF);
-    if (env_str != NULL)
-        test_opts->tcti_conf = env_str;
-    env_str = getenv (ENV_TABRMD_BUS_TYPE);
-    if (env_str != NULL) {
-        test_opts->tabrmd_bus_type = bus_type_from_str (env_str);
     }
-    env_str = getenv (ENV_TABRMD_BUS_NAME);
+    env_str = getenv (ENV_TCTI_CONF);
     if (env_str != NULL) {
-        test_opts->tabrmd_bus_name = env_str;
+        g_debug ("%s: %s is \"%s\"", __func__, ENV_TCTI_CONF, env_str);
+        test_opts->tcti_conf = env_str;
     }
     env_str = getenv (ENV_TCTI_RETRIES);
     if (env_str != NULL) {
+        g_debug ("%s: %s is \"%s\"", __func__, ENV_TCTI_RETRIES, env_str);
         test_opts->tcti_retries = strtoumax (env_str, NULL, 10);
     }
+
     return 0;
 }
 /*
@@ -105,9 +108,7 @@ void
 dump_test_opts (test_opts_t *opts)
 {
     printf ("test_opts_t:\n");
-    printf ("  tcti_filename:   %s\n", opts->tcti_filename);
-    printf ("  tcti_conf:       %s\n", opts->tcti_conf);
-    printf ("  tabrmd_bus_type: %s\n", bus_str_from_type (opts->tabrmd_bus_type));
-    printf ("  tabrmd_bus_name: %s\n", opts->tabrmd_bus_name);
-    printf ("  retries:         %" PRIuMAX "\n", opts->tcti_retries);
+    printf ("  tcti_filename: %s\n", opts->tcti_filename);
+    printf ("  tcti_conf:     %s\n", opts->tcti_conf);
+    printf ("  retries:       %" PRIuMAX "\n", opts->tcti_retries);
 }

@@ -33,9 +33,10 @@
 
 #include "tabrmd-generated.h"
 #include "tpm2-header.h"
+#include "util.h"
 
 #define TSS2_TCTI_TABRMD_MAGIC 0x1c8e03ff00db0f92
-#define TSS2_TCTI_TABRMD_VERSION 1
+#define TSS2_TCTI_TABRMD_VERSION 2
 
 #define TSS2_TCTI_TABRMD_ID(context) \
     ((TSS2_TCTI_TABRMD_CONTEXT*)context)->id
@@ -69,7 +70,7 @@
  *   TRANSMIT:
  *     transmit:    success transitions the state machine to RECEIVE
  *                  failure leaves the state unchanged
- *     receieve:    produces TSS2_TCTI_RC_BAD_SEQUENCE
+ *     receive:     produces TSS2_TCTI_RC_BAD_SEQUENCE
  *     finalize:    transitions state machine to FINAL state
  *     cancel:      produces TSS2_TCTI_RC_BAD_SEQUENCE
  *     setLocality: success or failure leaves state unchanged
@@ -111,9 +112,14 @@ typedef struct {
     uint8_t                        header_buf [TPM_HEADER_SIZE];
 } TSS2_TCTI_TABRMD_CONTEXT;
 
+#define TABRMD_CONF_INIT_DEFAULT { \
+    .bus_name = TABRMD_DBUS_NAME_DEFAULT, \
+    .bus_type = TABRMD_DBUS_TYPE_DEFAULT, \
+}
+
 typedef struct {
-    TCTI_TABRMD_DBUS_TYPE bus_type;
     const char *bus_name;
+    GBusType bus_type;
 } tabrmd_conf_t;
 
 /*
@@ -122,11 +128,8 @@ typedef struct {
  * private header so that we can invoke it in the test harness.
  */
 const TSS2_TCTI_INFO* Tss2_Tcti_Info (void);
-TCTI_TABRMD_DBUS_TYPE tabrmd_bus_type_from_str (const char* const bus_type);
-TSS2_RC tabrmd_conf_parse_kv (const char *key,
-                              const char *value,
-                              tabrmd_conf_t * const tabrmd_conf);
-TSS2_RC tabrmd_conf_parse (char *conf_str,
-                           tabrmd_conf_t * const tabrmd_conf);
+GBusType tabrmd_bus_type_from_str (const char* const bus_type);
+TSS2_RC tabrmd_kv_callback (const key_value_t *key_value,
+                            gpointer user_data);
 
 #endif /* TSS2TCTI_TABRMD_PRIV_H */

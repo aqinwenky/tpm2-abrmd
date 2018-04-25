@@ -32,6 +32,7 @@
 #include <tss2/tss2_tpm2_types.h>
 
 #include "common.h"
+#include "tpm2-struct-init.h"
 #include "test-options.h"
 #include "context-util.h"
 
@@ -46,8 +47,7 @@
  * beyond the session that created it.
  */
 int
-main (int argc,
-      char *argv[])
+main ()
 {
 
 	unsigned i;
@@ -58,8 +58,8 @@ main (int argc,
 		TSS2_RC rc;
 		TSS2_SYS_CONTEXT *sapi_context;
 		TPMI_SH_AUTH_SESSION  session_handle = 0, session_handle_load = 0;
-		TPMS_CONTEXT          context = { 0, };
-		test_opts_t opts = TEST_OPTS_DEFAULT_INIT;
+        TPMS_CONTEXT          context = TPMS_CONTEXT_ZERO_INIT;
+		test_opts_t           opts = TEST_OPTS_DEFAULT_INIT;
 
 		get_test_opts_from_env (&opts);
 		if (sanity_check_test_opts (&opts) != 0)
@@ -71,7 +71,7 @@ main (int argc,
 		}
 		g_info ("Got SAPI context: 0x%" PRIxPTR, (uintptr_t)sapi_context);
 		/* create an auth session */
-		g_info ("Starting unbound, unsaulted auth session");
+		g_info ("Starting unbound, unsalted auth session");
 		rc = start_auth_session (sapi_context, &session_handle);
 		if (rc != TSS2_RC_SUCCESS) {
 			g_error ("Tss2_Sys_StartAuthSession failed: 0x%" PRIxHANDLE, rc);
@@ -86,7 +86,7 @@ main (int argc,
 			g_error ("Tss2_Sys_ContextSave failed: 0x%" PRIxHANDLE, rc);
 		}
 		prettyprint_context (&context);
-		g_info ("Tearding down SAPI connection 0x%" PRIxPTR,
+		g_info ("Tearing down SAPI connection 0x%" PRIxPTR,
 				(uintptr_t)sapi_context);
 		sapi_teardown_full (sapi_context);
 

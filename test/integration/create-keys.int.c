@@ -38,15 +38,15 @@
 /*
  * This is a test program that creates and loads a configurable number of
  * transient objects in the NULL hierarchy. The number of keys created
- * undert the NULL primary key can be provided as a base 10 integer on
+ * under the NULL primary key can be provided as a base 10 integer on
  * the command line. This is the only parameter the program takes.
  */
 int
 test_invoke (TSS2_SYS_CONTEXT *sapi_context)
 {
-    TPM2_HANDLE         parent_handle, out_handle;
+    TPM2_HANDLE        parent_handle, out_handle;
     TPM2B_PRIVATE      out_private = TPM2B_PRIVATE_STATIC_INIT;
-    TPM2B_PUBLIC       out_public  = { 0 };
+    TPM2B_PUBLIC       out_public  = TPM2B_PUBLIC_ZERO_INIT;
     TSS2_RC            rc = TSS2_RC_SUCCESS;
     char              *env_str = NULL, *end_ptr = NULL;
     uint8_t            loops = NUM_KEYS;

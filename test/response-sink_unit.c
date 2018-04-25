@@ -30,15 +30,17 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
+#include "util.h"
 #include "response-sink.h"
 
 /**
- * Test to allcoate and destroy a ResponseSink.
+ * Test to allocate and destroy a ResponseSink.
  */
 static void
 response_sink_allocate_test (void **state)
 {
     ResponseSink *sink;
+    UNUSED_PARAM(state);
 
     sink = response_sink_new ();
 
@@ -46,8 +48,7 @@ response_sink_allocate_test (void **state)
 }
 
 int
-main (int argc,
-      char* argv[])
+main (void)
 {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test (response_sink_allocate_test),

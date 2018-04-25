@@ -66,6 +66,7 @@ typedef struct {
     TPMS_CONTEXT context;
     bool load_success;
 } test_data_t;
+#define TEST_DATA_ZERO_INIT { 0, { 0, 0, 0, { 0, 0 } }, false }
 
 void
 create_connection_and_save_sessions (test_opts_t *opts,
@@ -104,7 +105,7 @@ create_connection_and_save_sessions (test_opts_t *opts,
         g_info ("Successfully saved context for session: 0x%" PRIxHANDLE,
                 data [i].handle);
         prettyprint_context (&data [i].context);
-        g_info ("Tearding down SAPI connection 0x%" PRIxPTR,
+        g_info ("Tearing down SAPI connection 0x%" PRIxPTR,
                 (uintptr_t)sapi_context);
         sapi_teardown_full (sapi_context);
     }
@@ -141,11 +142,12 @@ load_sessions (TSS2_SYS_CONTEXT *sapi_context,
     return success_count;
 }
 int
-main (int argc,
-      char *argv[])
+main ()
 {
     TSS2_SYS_CONTEXT *sapi_context;
-    test_data_t test_data [TEST_MAX_SESSIONS] = { 0 };
+    test_data_t test_data [TEST_MAX_SESSIONS] =  {
+        TEST_DATA_ZERO_INIT, TEST_DATA_ZERO_INIT, TEST_DATA_ZERO_INIT,
+        TEST_DATA_ZERO_INIT, TEST_DATA_ZERO_INIT };
     test_opts_t opts = TEST_OPTS_DEFAULT_INIT;
     guint success_count;
 

@@ -31,6 +31,7 @@
 #include <tss2/tss2_sys.h>
 
 #include "common.h"
+#include "tpm2-struct-init.h"
 #include "test.h"
 #define PRIxHANDLE "08" PRIx32
 /*
@@ -41,7 +42,7 @@
  * the TPM for the active handles. The only session handle we've created is
  * still loaded so we should receive no handles back.
  *
- * We then save the context of the session. This should trasition it's state
+ * We then save the context of the session. This should transition its state
  * from 'loaded' to 'active'. Now when we query the TPM for loaded and active
  * handles again. Since we've saved the context of our session there should
  * be no loaded sessions and one active session (the one we just saved).
@@ -67,7 +68,7 @@ handles_count (TSS2_SYS_CONTEXT *sapi_context,
     TSS2_RC              rc         = TSS2_RC_SUCCESS;
     TPM2_CAP              capability = TPM2_CAP_HANDLES;
     TPMI_YES_NO          more_data  = 0;
-    TPMS_CAPABILITY_DATA cap_data   = { 0, };
+    TPMS_CAPABILITY_DATA cap_data   = TPMS_CAPABILITY_DATA_ZERO_INIT;
 
     rc = Tss2_Sys_GetCapability (sapi_context,
                                  NULL,
@@ -98,7 +99,7 @@ prettyprint_getcap_handles (TSS2_SYS_CONTEXT *sapi_context,
     TSS2_RC              rc         = TSS2_RC_SUCCESS;
     TPM2_CAP              capability = TPM2_CAP_HANDLES;
     TPMI_YES_NO          more_data  = 0;
-    TPMS_CAPABILITY_DATA cap_data   = { 0, };
+    TPMS_CAPABILITY_DATA cap_data   = TPMS_CAPABILITY_DATA_ZERO_INIT;
     size_t               count      = 100;
     size_t               i;
 
@@ -157,11 +158,11 @@ test_invoke (TSS2_SYS_CONTEXT *sapi_context)
 {
     TSS2_RC               rc;
     TPMI_SH_AUTH_SESSION  session_handle = 0, session_handle_load = 0;
-    TPMS_CONTEXT          context = { 0, };
+    TPMS_CONTEXT          context = TPMS_CONTEXT_ZERO_INIT;
     UINT32                count = 0;
 
     /* create an auth session */
-    g_info ("Starting unbound, unsaulted auth session");
+    g_info ("Starting unbound, unsalted auth session");
     rc = start_auth_session (sapi_context, &session_handle);
     if (rc != TSS2_RC_SUCCESS) {
         g_error ("Tss2_Sys_StartAuthSession failed: 0x%" PRIxHANDLE, rc);

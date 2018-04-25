@@ -15,7 +15,6 @@ AM_CFLAGS = $(EXTRA_CFLAGS) \
 AM_LDFLAGS = $(EXTRA_LDFLAGS) $(CODE_COVERAGE_LIBS)
 UNIT_AM_CFLAGS = $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 
-if UNIT
 TESTS_UNIT = \
     test/access-broker_unit \
     test/command-attrs_unit \
@@ -42,9 +41,8 @@ TESTS_UNIT = \
     test/tss2-tcti-tabrmd_unit \
     test/tss2-tcti-echo_unit \
     test/util_unit
-endif #UNIT
 
-tests_integration = \
+TESTS_INTEGRATION = \
     test/integration/auth-session-max.int \
     test/integration/auth-session-start-flush.int \
     test/integration/auth-session-start-save.int \
@@ -57,8 +55,8 @@ tests_integration = \
     test/integration/session-load-from-open-connection.int \
     test/integration/start-auth-session.int \
     test/integration/tcti-cancel.int \
+    test/integration/tcti-connections-max.int \
     test/integration/tcti-double-finalize.int \
-    test/integration/tcti-sessions-max.int \
     test/integration/tcti-set-locality.int \
     test/integration/hash-sequence.int \
     test/integration/not-enough-handles-for-command.int \
@@ -66,31 +64,27 @@ tests_integration = \
     test/integration/tpm2-command-flush-no-handle.int \
     test/integration/util-buf-max-upper-bound.int
 
-tests_integration_nohw = test/integration/tcti-connect-multiple.int
+TESTS_INTEGRATION_NOHW = test/integration/tcti-connect-multiple.int
 
-if SIMULATOR_BIN
-TESTS_INTEGRATION = $(tests_integration) $(tests_integration_nohw)
-endif
-
-if HWTPM
-TESTS_INTEGRATION = $(tests_integration)
-endif
-
-XFAIL_TESTS = \
-    test/integration/start-auth-session.int \
-    test/integration/tcti-sessions-max.int
-
-TESTS = $(TESTS_UNIT) $(TESTS_INTEGRATION)
+TESTS = $(TESTS_INTEGRATION)
+XFAIL_TESTS = test/integration/start-auth-session.int
 TEST_EXTENSIONS = .int
 AM_TESTS_ENVIRONMENT = TEST_FUNC_LIB=$(srcdir)/scripts/int-test-funcs.sh
+INT_LOG_COMPILER = $(srcdir)/scripts/int-test-setup.sh
+INT_LOG_FLAGS = --tabrmd-bin=$(sbin_PROGRAMS) --tabrmd-tcti=$(TABRMD_TCTI)
+
 if HWTPM
-INT_LOG_COMPILER = $(srcdir)/scripts/int-hardware-setup.sh
-else
-INT_LOG_COMPILER = $(srcdir)/scripts/int-simulator-setup.sh
+TABRMD_TCTI = device
 endif
-INT_LOG_FLAGS = --tabrmd-bin=$(sbin_PROGRAMS)
+
 if SIMULATOR_BIN
 INT_LOG_FLAGS += --simulator-bin=$(SIMULATOR_BIN)
+TABRMD_TCTI = mssim
+TESTS += $(TESTS_INTEGRATION_NOHW)
+endif
+
+if UNIT
+TESTS += $(TESTS_UNIT)
 endif
 
 sbin_PROGRAMS   = src/tpm2-abrmd
@@ -107,20 +101,9 @@ noinst_LTLIBRARIES = \
     $(libtss2_tcti_echo) \
     $(libtest) \
     $(libutil)
-man3_MANS = man/man3/tss2_tcti_tabrmd_init.3
+man3_MANS = man/man3/Tss2_Tcti_Tabrmd_Init.3
 man7_MANS = man/man7/tss2-tcti-tabrmd.7
 man8_MANS = man/man8/tpm2-abrmd.8
-
-install-data-hook:
-	$(LN_S) -f tss2_tcti_tabrmd_init.3 \
-                $(DESTDIR)$(mandir)/man3/tss2_tcti_tabrmd_init_full.3
-if WITH_UDEVRULESPREFIX
-	mv $(DESTDIR)$(udevrulesdir)/tpm-udev.rules $(DESTDIR)$(udevrulesdir)/$(udevrulesprefix)tpm-udev.rules
-endif
-
-uninstall-local:
-	-rm $(DESTDIR)$(mandir)/man3/tss2_tcti_tabrmd_init_full.3
-	-rm $(DESTDIR)$(udevrulesdir)/$(udevrulesprefix)tpm-udev.rules
 
 libtss2_tcti_tabrmddir      = $(includedir)/tcti
 libtss2_tcti_tabrmd_HEADERS = $(srcdir)/src/include/tss2-tcti-tabrmd.h
@@ -131,18 +114,16 @@ EXTRA_DIST = \
     test/integration/tpm2-struct-init.h \
     src/tcti-tabrmd.map \
     man/colophon.in \
-    man/tss2_tcti_tabrmd_init.3.in \
+    man/Tss2_Tcti_Tabrmd_Init.3.in \
     man/tss2-tcti-tabrmd.7.in \
     man/tpm2-abrmd.8.in \
     dist/tpm2-abrmd.conf \
+    dist/tpm2-abrmd.preset.in \
     dist/tss2-tcti-tabrmd.pc.in \
-    dist/tpm2-abrmd.preset \
     dist/tpm2-abrmd.service.in \
-    dist/tpm-udev.rules \
     dist/com.intel.tss2.Tabrmd.service \
-    scripts/int-simulator-setup.sh \
-    scripts/int-hardware-setup.sh \
     scripts/int-test-funcs.sh \
+    scripts/int-test-setup.sh \
     selinux/Makefile \
     selinux/tabrmd.fc \
     selinux/tabrmd.if \
@@ -162,6 +143,7 @@ CLEANFILES = \
     src/tabrmd-generated.c \
     src/tabrmd-generated.h \
     $(pkgconfig_DATA) \
+    $(systemdpreset_DATA) \
     $(systemdsystemunit_DATA) \
     test/integration/*.log \
     _tabrmd.log
@@ -171,13 +153,12 @@ BUILT_SOURCES = src/tabrmd-generated.h src/tabrmd-generated.c
 pkgconfigdir     = $(libdir)/pkgconfig
 pkgconfig_DATA   = dist/tss2-tcti-tabrmd.pc
 dbuspolicy_DATA  = dist/tpm2-abrmd.conf
-udevrules_DATA   = dist/tpm-udev.rules
 if HAVE_SYSTEMD
+systemdpreset_DATA = dist/tpm2-abrmd.preset
 systemdsystemunit_DATA = dist/tpm2-abrmd.service
 dbusservicedir   = $(datadir)/dbus-1/system-services
 dbusservice_DATA = dist/com.intel.tss2.Tabrmd.service
 endif # HAVE_SYSTEMD
-systemdpreset_DATA = dist/tpm2-abrmd.preset
 
 @CODE_COVERAGE_RULES@
 @VALGRIND_CHECK_RULES@
@@ -189,6 +170,8 @@ VALGRIND_memcheck_FLAGS = --leak-check=full --show-leak-kinds=definite,indirect 
 src/ipc-frontend-dbus.c : $(BUILT_SOURCES)
 
 # utility library with most of the code that makes up the daemon
+# -Wno-unused-parameter for automatically-generated tabrmd-generated.c:
+src_libutil_la_CFLAGS  = $(AM_CFLAGS) -Wno-unused-parameter
 src_libutil_la_LIBADD  = $(DBUS_LIBS) $(GIO_LIBS) $(GLIB_LIBS) $(PTHREAD_LIBS) \
     $(TSS2_SYS_LIBS) $(TCTI_DEVICE_LIBS) $(TCTI_SOCKET_LIBS)
 src_libutil_la_SOURCES = \
@@ -496,8 +479,8 @@ test_integration_tcti_double_finalize_int_SOURCES = test/integration/main.c \
 test_integration_tcti_connect_multiple_int_LDADD = $(TEST_INT_LIBS)
 test_integration_tcti_connect_multiple_int_SOURCES = test/integration/tcti-connect-multiple.int.c
 
-test_integration_tcti_sessions_max_int_LDADD = $(TEST_INT_LIBS)
-test_integration_tcti_sessions_max_int_SOURCES = test/integration/tcti-sessions-max.int.c
+test_integration_tcti_connections_max_int_LDADD = $(TEST_INT_LIBS)
+test_integration_tcti_connections_max_int_SOURCES = test/integration/tcti-connections-max.int.c
 
 test_integration_tcti_set_locality_int_LDADD  = $(TEST_INT_LIBS)
 test_integration_tcti_set_locality_int_SOURCES = test/integration/main.c test/integration/tcti-set-locality.int.c
