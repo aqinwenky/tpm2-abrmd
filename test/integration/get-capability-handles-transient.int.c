@@ -128,7 +128,7 @@ get_transient_handles (TSS2_SYS_CONTEXT *sapi_context,
         more_data == 1 ? g_print ("more data\n") : g_print ("no more data\n");
     } while (more_data == 1);
 
-    *handle_count = handles_got + 1;
+    *handle_count = handles_got;
 
     return TSS2_RC_SUCCESS;
 }
@@ -224,6 +224,11 @@ test_invoke (TSS2_SYS_CONTEXT *sapi_context)
     if (rc != TSS2_RC_SUCCESS) {
         g_warning ("get_transient_handles returned 0x%" PRIx32, rc);
         return rc;
+    }
+    if (handles_count != loops) {
+        g_warning ("GetCapabilities returned %zu handles, expecting %" PRIu16,
+                   handles_count, loops);
+        return -1;
     }
 
     g_debug ("loaded handle count: %zu", handles_count);
