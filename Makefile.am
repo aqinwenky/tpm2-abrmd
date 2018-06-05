@@ -47,7 +47,7 @@ TESTS_INTEGRATION = \
     test/integration/auth-session-start-flush.int \
     test/integration/auth-session-start-save.int \
     test/integration/auth-session-start-save-load.int \
-    test/integration/create-keys.int \
+    test/integration/max-transient-upperbound.int \
     test/integration/get-capability-handles-transient.int \
     test/integration/manage-transient-keys.int \
     test/integration/session-load-from-closed-connection.int \
@@ -67,18 +67,20 @@ TESTS_INTEGRATION = \
 TESTS_INTEGRATION_NOHW = test/integration/tcti-connect-multiple.int
 
 TESTS = $(TESTS_INTEGRATION)
-XFAIL_TESTS = test/integration/start-auth-session.int
+XFAIL_TESTS = \
+    test/integration/start-auth-session.int
 TEST_EXTENSIONS = .int
-AM_TESTS_ENVIRONMENT = TEST_FUNC_LIB=$(srcdir)/scripts/int-test-funcs.sh
+AM_TESTS_ENVIRONMENT = \
+    TEST_FUNC_LIB=$(srcdir)/scripts/int-test-funcs.sh \
+    PATH=./src:$(PATH)
 INT_LOG_COMPILER = $(srcdir)/scripts/int-test-setup.sh
-INT_LOG_FLAGS = --tabrmd-bin=$(sbin_PROGRAMS) --tabrmd-tcti=$(TABRMD_TCTI)
+INT_LOG_FLAGS = --tabrmd-tcti=$(TABRMD_TCTI)
 
 if HWTPM
 TABRMD_TCTI = device
 endif
 
-if SIMULATOR_BIN
-INT_LOG_FLAGS += --simulator-bin=$(SIMULATOR_BIN)
+if ENABLE_INTEGRATION
 TABRMD_TCTI = mssim
 TESTS += $(TESTS_INTEGRATION_NOHW)
 endif
@@ -105,7 +107,7 @@ man3_MANS = man/man3/Tss2_Tcti_Tabrmd_Init.3
 man7_MANS = man/man7/tss2-tcti-tabrmd.7
 man8_MANS = man/man8/tpm2-abrmd.8
 
-libtss2_tcti_tabrmddir      = $(includedir)/tcti
+libtss2_tcti_tabrmddir      = $(includedir)/tss2
 libtss2_tcti_tabrmd_HEADERS = $(srcdir)/src/include/tss2-tcti-tabrmd.h
 
 EXTRA_DIST = \
@@ -447,8 +449,9 @@ test_integration_auth_session_start_save_load_int_LDADD = $(TEST_INT_LIBS)
 test_integration_auth_session_start_save_load_int_SOURCES = test/integration/main.c \
     test/integration/auth-session-start-save-load.int.c
 
-test_integration_create_keys_int_LDADD = $(TEST_INT_LIBS)
-test_integration_create_keys_int_SOURCES = test/integration/main.c test/integration/create-keys.int.c
+test_integration_max_transient_upperbound_int_LDADD = $(TEST_INT_LIBS)
+test_integration_max_transient_upperbound_int_SOURCES = test/integration/main.c \
+    test/integration/max-transient-upperbound.int.c
 
 test_integration_get_capability_handles_transient_int_LDADD = $(TEST_INT_LIBS)
 test_integration_get_capability_handles_transient_int_SOURCES = \

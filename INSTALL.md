@@ -188,23 +188,19 @@ warned.
 
 The next two subsections describe these two configurations:
 
-### Run Integration Tests with TPM2 simulator: `--with-simulatorbin`
+### Run Integration Tests: `--enable-integration`
+If the configure script is passed the `--enable-integration` option then the
+test harness will execute the integration tests against the software TPM2
+simulator. The configure script will check for the existance of the software
+TPM2 simulator executable `tpm_server` on the PATH. An instance of the
+simulator will be created for each test executable to allow the parallel
+execution of test cases.
+
 This is the recommended integration test configuration. It requires that you
 first download and compile the TPM2 software simulator as documented by the
-simulators maintainers.
-
-Once you have the `tpm_server` built you can inform the tpm2-abrmd build of
-its location by passing an absolute path to the `./configure` script through
-the `--with-simulatorbin` option:
-```
-$ ./configure --with-simulatorbin=/path/to/tpm_server
-```
-
-If the configure script is able to find the executable you provide through this
-option then executing `make check` will cause the integration tests to be built
-and executed. The test harness in the build system will run a `tpm_server` and
-`tpm2-abrmd` for each test executable. This allows the test harness to execute
-integration tests in parallel.
+simulators maintainers. Once you have the `tpm_server` built, you must ensure
+that it is discoverable via the PATH environment variable when the
+`./configure` script is run.
 
 **NOTE**: The `--with-simulatorbin` option does not change the default for
 tpm2-abrmd, which is to use TPM hardware.
@@ -214,16 +210,54 @@ $ sudo -u tss /usr/local/sbin/tpm2-abrmd --tcti=mssim
 ```
 
 ### Run Integration Tests with hardware TPM2: `--enable-test-hwtpm`
-Once you have a TPM hardware, configure the `./configure` script through the
-`--enable-test-hwtpm` option:
+It's possible to run the integration tests against "real" TPM2 hardware, not
+just against the simulator. This does however come with some restrictions.
+Firstly your TPM2 hardware must be properly initialized by your platform and
+the kernel properly configured to load the appropriate driver. How to do all
+of this is beyond the scope of this document and so we assume the reader has
+already done this.
+
+Once your TPM2 hardware is all set up you may configure tpm2-abrmd build to
+run the integration tests against the TPM2 device by passing the
+`./configure` script the `--enable-test-hwtpm` option:
 ```
 $ ./configure --enable-test-hwtpm
 ```
+Providing this option will enable the integration tests much like the
+`--enable-integration` but the configure script will not check for the
+simulator executable.
 
-The integration tests are executed on a real TPM2 hardware through running
-`make check`. Note that it requires the elevated privilege (possibly root
-access depending on your platforms configuration) to launch tpm2-abrmd
-and to access /dev/tpm0.
+The test harness can then be run with the typical `make check` though there
+are some limitations due to the use of the hardware TPM:
+1) The test harness does not support parallel execution of tests in this
+configuration. When each test is executed a fresh instance of the daemon is
+started and since there's only one instance of the TPM2 device.
+2) The tests must be executed as a privileged user. This is required as the
+daemon will interact with the TPM2 device through the `/dev/tpm0` device node
+and access to it typically requires elevated privileges. The easiest approach,
+which is also the most risky, is to run tests in this configuration as the
+`root` user.
+3) To simplify the test harness in this configuration the tpm2-abrmd is run
+on the DBus system bus (it's run on the session bus when tests are executed
+against the simulator) and the default DBus name for the daemon
+(com.intel.tss2.Tabrmd) is used. This implies that any existing instance of
+the daemon that may have been started when your system boots *must* be stopped
+before the test harness can run tests against your TPM hardware.
+
+Finally executing tests against real TPM2 hardware is exponentially slower
+than running them against the software simulator. People often refer to the
+TPM2 as a "crypto decelerator" for a reason :) As such we recommend that tests
+be executed individually until you're confident your configuration works as
+expected. An example follows:
+```
+sudo make check TESTS=test/integration/auth-session-start-flush.int
+```
+
+This example runs only the `auth-session-start-flush.int` test which isn't
+particularly compute-intensive since it doesn't create any keys or carry out
+any signing or encryption operations other than those done by the TPM2
+device as part of its session management operations.
+
 *WARNING*: If this test suite is executed against a TPM2 it may result in the
 TPM2 device being damaged or destroyed. You have been warned ... again.
 
